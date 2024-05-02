@@ -74,6 +74,22 @@ def calculate_stats(time_data, pos_data, orientation_data, velocity_data):
     stats['VelocityY'] = {'max': np.max(velocity_data[:, 1]), 'min': np.min(velocity_data[:, 1]), 'mean': np.mean(velocity_data[:, 1])}
     stats['VelocityZ'] = {'max': np.max(velocity_data[:, 2]), 'min': np.min(velocity_data[:, 2]), 'mean': np.mean(velocity_data[:, 2])}
 
+    # 위치 데이터 CV 계산
+    stats['HeadPosX']['cv'] = np.std(pos_data[:, 0]) / np.mean(pos_data[:, 0])
+    stats['HeadPosY']['cv'] = np.std(pos_data[:, 1]) / np.mean(pos_data[:, 1])
+    stats['HeadPosZ']['cv'] = np.std(pos_data[:, 2]) / np.mean(pos_data[:, 2])
+
+    # 방향 데이터 CV 계산
+    stats['HeadOrientationW']['cv'] = np.std(orientation_data[:, 0]) / np.mean(orientation_data[:, 0])
+    stats['HeadOrientationX']['cv'] = np.std(orientation_data[:, 1]) / np.mean(orientation_data[:, 1])
+    stats['HeadOrientationY']['cv'] = np.std(orientation_data[:, 2]) / np.mean(orientation_data[:, 2])
+    stats['HeadOrientationZ']['cv'] = np.std(orientation_data[:, 3]) / np.mean(orientation_data[:, 3])
+
+    # 속도 데이터 CV 계산
+    stats['VelocityX']['cv'] = np.std(velocity_data[:, 0]) / np.mean(velocity_data[:, 0])
+    stats['VelocityY']['cv'] = np.std(velocity_data[:, 1]) / np.mean(velocity_data[:, 1])
+    stats['VelocityZ']['cv'] = np.std(velocity_data[:, 2]) / np.mean(velocity_data[:, 2])
+
     return stats
 
 def save_stats(stats, output_dir):
@@ -82,9 +98,9 @@ def save_stats(stats, output_dir):
     
     with open(file_path, 'w', newline='') as file:
         csv_writer = csv.writer(file)
-        csv_writer.writerow(['Variable', 'Max', 'Min', 'Mean'])
+        csv_writer.writerow(['Variable', 'Max', 'Min', 'Mean', 'CV'])
         for key, value in stats.items():
-            csv_writer.writerow([key, value['max'], value['min'], value['mean']])
+            csv_writer.writerow([key, value['max'], value['min'], value['mean'], value['cv']])
 
 def plot_data(time_data, pos_data, orientation_data, velocity_data, output_dir):
     # 위치 데이터 플롯 (3차원)
@@ -101,16 +117,38 @@ def plot_data(time_data, pos_data, orientation_data, velocity_data, output_dir):
     plt.savefig(plot_file_path)
     plt.close()
 
-    # 위치 데이터 플롯 (2차원)
+    # HeadPosX 플롯 (2차원)
     plt.figure()
     plt.plot(time_data, pos_data[:, 0], label='HeadPosX')
-    plt.plot(time_data, pos_data[:, 1], label='HeadPosY')
-    plt.plot(time_data, pos_data[:, 2], label='HeadPosZ')
     plt.xlabel('Time (s)')
-    plt.ylabel('Position (m)')
+    plt.ylabel('HeadPosX (m)')
     plt.legend()
     plt.tight_layout()
-    plot_file_name = 'head_position_2d.png'
+    plot_file_name = 'head_position_x.png'
+    plot_file_path = os.path.join(output_dir, plot_file_name)
+    plt.savefig(plot_file_path)
+    plt.close()
+
+    # HeadPosY 플롯 (2차원)
+    plt.figure()
+    plt.plot(time_data, pos_data[:, 1], label='HeadPosY')
+    plt.xlabel('Time (s)')
+    plt.ylabel('HeadPosY (m)')
+    plt.legend()
+    plt.tight_layout()
+    plot_file_name = 'head_position_y.png'
+    plot_file_path = os.path.join(output_dir, plot_file_name)
+    plt.savefig(plot_file_path)
+    plt.close()
+
+    # HeadPosZ 플롯 (2차원)
+    plt.figure()
+    plt.plot(time_data, pos_data[:, 2], label='HeadPosZ')
+    plt.xlabel('Time (s)')
+    plt.ylabel('HeadPosZ (m)')
+    plt.legend()
+    plt.tight_layout()
+    plot_file_name = 'head_position_z.png'
     plot_file_path = os.path.join(output_dir, plot_file_name)
     plt.savefig(plot_file_path)
     plt.close()
@@ -184,7 +222,7 @@ if file_path and output_dir:
     stats = calculate_stats(time_data, pos_data, orientation_data, velocity_data)
     print("통계:")
     for key, value in stats.items():
-        print(f"{key}: 최대값={value['max']}, 최소값={value['min']}, 평균값={value['mean']}")
+        print(f"{key}: 최대값={value['max']}, 최소값={value['min']}, 평균값={value['mean']}, CV={value['cv']}")
     save_stats(stats, output_dir)
     plot_data(time_data, pos_data, orientation_data, velocity_data, output_dir)
 else:
