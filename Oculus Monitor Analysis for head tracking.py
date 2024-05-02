@@ -1,7 +1,10 @@
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
-from tkinter import Tk, filedialog
+from mpl_toolkits.mplot3d import Axes3D
+import os
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename, askdirectory
 
 def process_data(file_path):
     # 데이터를 저장할 리스트 초기화
@@ -34,22 +37,23 @@ def process_data(file_path):
 
     return time_data, pos_data, orientation_data, velocity_data
 
-def save_data(time_data, pos_data, orientation_data, velocity_data):
-    file_path = filedialog.asksaveasfilename(defaultextension='.csv')
-    if file_path:
-        with open(file_path, 'w', newline='') as file:
-            csv_writer = csv.writer(file)
-            csv_writer.writerow(['Time', 'HeadPosX', 'HeadPosY', 'HeadPosZ', 'HeadOrientationW', 'HeadOrientationX', 'HeadOrientationY', 'HeadOrientationZ', 'VelocityX', 'VelocityY', 'VelocityZ'])
-            
-            for i in range(len(time_data)):
-                row = [time_data[i]]
-                row.extend(pos_data[i])
-                row.extend(orientation_data[i])
-                if i < len(velocity_data):
-                    row.extend(velocity_data[i])
-                else:
-                    row.extend([0, 0, 0])  # 마지막 행의 속도 데이터는 없으므로 0으로 채움
-                csv_writer.writerow(row)
+def save_data(time_data, pos_data, orientation_data, velocity_data, output_dir):
+    file_name = 'processed_data.csv'
+    file_path = os.path.join(output_dir, file_name)
+    
+    with open(file_path, 'w', newline='') as file:
+        csv_writer = csv.writer(file)
+        csv_writer.writerow(['Time', 'HeadPosX', 'HeadPosY', 'HeadPosZ', 'HeadOrientationW', 'HeadOrientationX', 'HeadOrientationY', 'HeadOrientationZ', 'VelocityX', 'VelocityY', 'VelocityZ'])
+        
+        for i in range(len(time_data)):
+            row = [time_data[i]]
+            row.extend(pos_data[i])
+            row.extend(orientation_data[i])
+            if i < len(velocity_data):
+                row.extend(velocity_data[i])
+            else:
+                row.extend([0, 0, 0])  # 마지막 행의 속도 데이터는 없으므로 0으로 채움
+            csv_writer.writerow(row)
 
 def calculate_stats(time_data, pos_data, orientation_data, velocity_data):
     stats = {}
@@ -72,43 +76,82 @@ def calculate_stats(time_data, pos_data, orientation_data, velocity_data):
 
     return stats
 
-def save_stats(stats):
-    file_path = filedialog.asksaveasfilename(defaultextension='.csv')
-    if file_path:
-        with open(file_path, 'w', newline='') as file:
-            csv_writer = csv.writer(file)
-            csv_writer.writerow(['Variable', 'Max', 'Min', 'Mean'])
-            for key, value in stats.items():
-                csv_writer.writerow([key, value['max'], value['min'], value['mean']])
+def save_stats(stats, output_dir):
+    file_name = 'stats.csv'
+    file_path = os.path.join(output_dir, file_name)
+    
+    with open(file_path, 'w', newline='') as file:
+        csv_writer = csv.writer(file)
+        csv_writer.writerow(['Variable', 'Max', 'Min', 'Mean'])
+        for key, value in stats.items():
+            csv_writer.writerow([key, value['max'], value['min'], value['mean']])
 
-def plot_data(time_data, pos_data, orientation_data, velocity_data):
-    # 위치 데이터 플롯
+def plot_data(time_data, pos_data, orientation_data, velocity_data, output_dir):
+    # 위치 데이터 플롯 (3차원)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(pos_data[:, 0], pos_data[:, 1], pos_data[:, 2], label='Head Position')
+    ax.set_xlabel('HeadPosX (m)')
+    ax.set_ylabel('HeadPosY (m)')
+    ax.set_zlabel('HeadPosZ (m)')
+    ax.legend()
+    plt.tight_layout()
+    plot_file_name = 'head_position_3d.png'
+    plot_file_path = os.path.join(output_dir, plot_file_name)
+    plt.savefig(plot_file_path)
+    plt.close()
+
+    # 위치 데이터 플롯 (2차원)
     plt.figure()
     plt.plot(time_data, pos_data[:, 0], label='HeadPosX')
     plt.plot(time_data, pos_data[:, 1], label='HeadPosY')
     plt.plot(time_data, pos_data[:, 2], label='HeadPosZ')
-    plt.xlabel('Time')
-    plt.ylabel('Position')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Position (m)')
     plt.legend()
     plt.tight_layout()
-    plot_file_path = filedialog.asksaveasfilename(defaultextension='.png')
-    if plot_file_path:
-        plt.savefig(plot_file_path)
+    plot_file_name = 'head_position_2d.png'
+    plot_file_path = os.path.join(output_dir, plot_file_name)
+    plt.savefig(plot_file_path)
     plt.close()
 
-    # 방향 데이터 플롯
+    # 방향 데이터 플롯 (3차원)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(orientation_data[:, 1], orientation_data[:, 2], orientation_data[:, 3], label='Head Orientation')
+    ax.set_xlabel('HeadOrientationX (quaternion)')
+    ax.set_ylabel('HeadOrientationY (quaternion)')
+    ax.set_zlabel('HeadOrientationZ (quaternion)')
+    ax.legend()
+    plt.tight_layout()
+    plot_file_name = 'head_orientation_3d.png'
+    plot_file_path = os.path.join(output_dir, plot_file_name)
+    plt.savefig(plot_file_path)
+    plt.close()
+
+    # 방향 데이터 플롯 (2차원)
     plt.figure()
-    plt.plot(time_data, orientation_data[:, 0], label='HeadOrientationW')
     plt.plot(time_data, orientation_data[:, 1], label='HeadOrientationX')
     plt.plot(time_data, orientation_data[:, 2], label='HeadOrientationY')
     plt.plot(time_data, orientation_data[:, 3], label='HeadOrientationZ')
-    plt.xlabel('Time')
-    plt.ylabel('Orientation')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Orientation (quaternion)')
     plt.legend()
     plt.tight_layout()
-    plot_file_path = filedialog.asksaveasfilename(defaultextension='.png')
-    if plot_file_path:
-        plt.savefig(plot_file_path)
+    plot_file_name = 'head_orientation_xyz.png'
+    plot_file_path = os.path.join(output_dir, plot_file_name)
+    plt.savefig(plot_file_path)
+    plt.close()
+
+    plt.figure()
+    plt.plot(time_data, orientation_data[:, 0], label='HeadOrientationW')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Orientation (quaternion)')
+    plt.legend()
+    plt.tight_layout()
+    plot_file_name = 'head_orientation_w.png'
+    plot_file_path = os.path.join(output_dir, plot_file_name)
+    plt.savefig(plot_file_path)
     plt.close()
 
     # 속도 데이터 플롯
@@ -116,28 +159,33 @@ def plot_data(time_data, pos_data, orientation_data, velocity_data):
     plt.plot(time_data[:-1], velocity_data[:, 0], label='VelocityX')
     plt.plot(time_data[:-1], velocity_data[:, 1], label='VelocityY')
     plt.plot(time_data[:-1], velocity_data[:, 2], label='VelocityZ')
-    plt.xlabel('Time')
-    plt.ylabel('Velocity')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Velocity (m/s)')
     plt.legend()
     plt.tight_layout()
-    plot_file_path = filedialog.asksaveasfilename(defaultextension='.png')
-    if plot_file_path:
-        plt.savefig(plot_file_path)
+    plot_file_name = 'velocity.png'
+    plot_file_path = os.path.join(output_dir, plot_file_name)
+    plt.savefig(plot_file_path)
     plt.close()
 
-# tkinter를 사용하여 파일 열기 대화상자 표시
+# tkinter 창 생성
 root = Tk()
 root.withdraw()
-file_path = filedialog.askopenfilename()
 
-if file_path:
+# 파일 경로 설정
+file_path = askopenfilename(title='Select Input File')
+
+# 출력 디렉토리 설정
+output_dir = askdirectory(title='Select Output Directory')
+
+if file_path and output_dir:
     time_data, pos_data, orientation_data, velocity_data = process_data(file_path)
-    save_data(time_data, pos_data, orientation_data, velocity_data)
+    save_data(time_data, pos_data, orientation_data, velocity_data, output_dir)
     stats = calculate_stats(time_data, pos_data, orientation_data, velocity_data)
     print("통계:")
     for key, value in stats.items():
         print(f"{key}: 최대값={value['max']}, 최소값={value['min']}, 평균값={value['mean']}")
-    save_stats(stats)
-    plot_data(time_data, pos_data, orientation_data, velocity_data)
+    save_stats(stats, output_dir)
+    plot_data(time_data, pos_data, orientation_data, velocity_data, output_dir)
 else:
-    print("No file selected.")
+    print("파일 경로 또는 출력 디렉토리가 선택되지 않았습니다.")
